@@ -1,6 +1,8 @@
 import pytest
 import requests
+import minio
 import binance_utils
+import pandas as pd
 
 class MockTradesResponse:
     def __init__(self, url):
@@ -31,6 +33,17 @@ def mock_binance_api(monkeypatch):
         elif binance_utils.binance_api_trades in url:
             return MockTradesResponse(url)
     monkeypatch.setattr(requests, "get", lambda *args, **kwargs: mock_get_trade(args[0]))
+
+class MockMinio:
+    @staticmethod
+    def put_object(*args, **kwargs):
+        return {'object_name': 'test'}
+
+@pytest.fixture(autouse=True)
+def mock_minio_storage(monkeypatch):
+    def mock_put_object():
+        return MockMinio()
+    monkeypatch.setattr(minio, "Minio", lambda *args, **kwargs: mock_put_object())
 
 trades_no_data = []
 trades_10_data = [
@@ -175,3 +188,4 @@ trades_5_data = [
 symbols_data = [
     {'symbol': 'S{}'.format(str(symbol))} for symbol in range(108)
 ]
+

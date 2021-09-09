@@ -13,8 +13,8 @@ def get_trade(symbol):
     while True:
         checkpoint, data = binance_utils.get_trade(symbol, checkpoint=checkpoint)
         trades.append(data)
-        done = storage.store_trades_as_parquet(data, symbol, bucket)
-        if done:
+        result, _ = storage.store_trades_as_parquet(trades, symbol, bucket)
+        if result.object_name:
             trades = []
 
 def get_binance_trades(symbols):
@@ -40,7 +40,7 @@ with DAG(
         task_get_binance_trades = PythonVirtualenvOperator(
             task_id="get_binance_trades_{}".format(i),
             python_callable=get_binance_trades,
-            requirements=["requests==2.21.0"],
+            requirements=["requests==2.21.0", "pandas==1.3.2", "minio==7.1.0"],
             system_site_packages=False,
             op_kwargs={'symbols': symbol_bags},
         )

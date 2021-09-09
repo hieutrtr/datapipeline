@@ -1,11 +1,11 @@
 import binance_utils
-import conftest as bft
+import conftest as cft
 import pytest
 
 @pytest.mark.parametrize("get_trade_symbol, checkpoint, get_trade_result", [
-    ("NODATA", 0, bft.trades_no_data),
-    ("10DATA0CP", 0, bft.trades_10_data),
-    ("10DATA5CP", 4, bft.trades_5_data),
+    ("NODATA", 0, cft.trades_no_data),
+    ("10DATA0CP", 0, cft.trades_10_data),
+    ("10DATA5CP", 4, cft.trades_5_data),
 ])
 def test_get_trade(get_trade_symbol, checkpoint, get_trade_result, mock_binance_api):
     res, cp = binance_utils.get_trade(get_trade_symbol, checkpoint)
