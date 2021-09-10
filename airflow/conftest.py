@@ -34,17 +34,6 @@ def mock_binance_api(monkeypatch):
             return MockTradesResponse(url)
     monkeypatch.setattr(requests, "get", lambda *args, **kwargs: mock_get_trade(args[0]))
 
-class MockMinio:
-    @staticmethod
-    def put_object(*args, **kwargs):
-        return {'object_name': 'test'}
-
-@pytest.fixture(autouse=True)
-def mock_minio_storage(monkeypatch):
-    def mock_put_object():
-        return MockMinio()
-    monkeypatch.setattr(minio, "Minio", lambda *args, **kwargs: mock_put_object())
-
 trades_no_data = []
 trades_10_data = [
     {

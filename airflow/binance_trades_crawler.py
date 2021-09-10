@@ -3,6 +3,7 @@ from airflow.operators.python import PythonVirtualenvOperator
 from airflow.utils.dates import days_ago
 import _thread, time
 import binance_utils, storage
+import pandas as pd
 
 tmp_dir = os.getenv('PATH')
 bucket = 'crypto'
@@ -13,8 +14,8 @@ def get_trade(symbol):
     while True:
         checkpoint, data = binance_utils.get_trade(symbol, checkpoint=checkpoint)
         trades.append(data)
-        result, _ = storage.store_trades_as_parquet(trades, symbol, bucket)
-        if result.object_name:
+        df = storage.store_trades_as_parquet(trades, symbol, bucket)
+        if not df.empty:
             trades = []
 
 def get_binance_trades(symbols):
