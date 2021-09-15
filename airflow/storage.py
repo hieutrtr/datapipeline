@@ -7,11 +7,10 @@ import minio
 STORAGE_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 STORAGE_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 STORAGE_DOMAIN = os.getenv('STORAGE_DOMAIN')
-root_path = '/root/data'
 binance_trade_dir = 'binance/trades'
 file_size = 1000
 
-def store_trades_as_parquet(data, symbol, bucket):
+def store_trades_as_parquet(data, symbol, root_path):
     if len(data) < file_size:
         return pd.DataFrame({'A' : []})
     df = pd.json_normalize(data)

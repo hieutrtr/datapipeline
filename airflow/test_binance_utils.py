@@ -12,13 +12,13 @@ def test_get_trade(get_trade_symbol, checkpoint, get_trade_result, mock_binance_
     assert res == get_trade_result
     assert cp in range(10)
 
-@pytest.mark.parametrize("workers, bags_len, bag_len, last_bag_len", [
+@pytest.mark.parametrize("worker, bags_len, bag_len, last_bag_len", [
     (10, 11, 10, 8),
     (5, 6, 21, 3),
     (4, 4, 27, 27)
 ])
-def test_get_splitted_symbols(workers, bags_len, bag_len, last_bag_len, mock_binance_api):
-    bags = binance_utils.get_splitted_symbols(workers)
+def test_get_splitted_symbols(worker, bags_len, bag_len, last_bag_len):
+    bags = binance_utils.get_splitted_symbols(cft.symbols_data, worker)
     assert len(bags) == bags_len
     for bag in bags[:-1]:
         assert len(bag) == bag_len

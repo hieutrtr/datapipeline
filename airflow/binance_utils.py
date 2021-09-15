@@ -17,7 +17,6 @@ def _check_error(res):
 # return trades with id that greater than checkpoint
 # return largest/latest id as new checkpoint
 # handle error of status 400 from binance get trades endpoint
-import logging
 
 def get_trade(symbol, check_point):
     res = rq.get("{}{}?symbol={}".format(binance_host, binance_api_trades, symbol))
@@ -36,11 +35,9 @@ def get_trade(symbol, check_point):
 # fetch all symbols.
 # separate symbols for each worker
 # return array of symbols bag
-def get_splitted_symbols(workers):
-    res = rq.get("{}{}".format(binance_host, binance_api_price))
-    prices = res.json()
+def get_splitted_symbols(prices, worker):
     n = len(prices)
-    size = int(n/workers)
+    size = int(n/worker)
     bags = []
     bag = []
     for p in prices:
