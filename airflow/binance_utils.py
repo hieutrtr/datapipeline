@@ -29,7 +29,8 @@ def get_trade(symbol, check_point):
     elif check_point == 0:
         return res, res[-1]['id']
     else:
-        return res[:check_point:-1], res[-1]['id']
+        from_index = len(res) - (res[-1]['id'] - check_point)
+        return res[from_index:], res[-1]['id']
 
 
 # fetch all symbols.

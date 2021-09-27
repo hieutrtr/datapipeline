@@ -32,8 +32,55 @@ get_symbols = SimpleHttpOperator(
 
 def get_binance_trades(**kwargs):
     import binance_utils
+    from kafka_utils import KafkaRest
     from airflow.models import Variable
     import redis, json
+
+    kafka_conf = {
+        'rest_host': Variable.get('kafka_rest_host'),
+        'schemaregistry_host': Variable.get('kafka_schemaregistry_host'),
+        'schemaregistry_user': Variable.get('kafka_schemaregistry_user'),
+        'schemaregistry_pass': Variable.get('kafka_schemaregistry_pass'),
+        'binance_trade_schema_id': Variable.get('kafka_binance_trade_schema_id'),
+    }
+
+    # separate schema module
+    binance_trade_schema = {
+        "type": "record",
+        "name": "binance_trade",
+        "fields":
+        [
+            {
+                "type": "int",
+                "name": "id"
+            },
+            {
+                "type": "int",
+                "name": "time"
+            },
+            {
+                "type": "string",
+                "name": "price"
+            },
+            {
+                "type": "string",
+                "name": "qty"
+            },
+            {
+                "type": "string",
+                "name": "quoteQty"
+            },
+            {
+                "type": "boolean",
+                "name": "isBuyerMaker"
+            },
+            {
+                "type": "boolean",
+                "name": "isBestMatch"
+            }
+        ]
+    }
+
     r = redis.Redis(
         host=Variable.get('redis_host'),
         port=int(Variable.get('redis_port')),
@@ -42,15 +89,14 @@ def get_binance_trades(**kwargs):
         decode_responses=True
     )
     symbols = kwargs['symbols']
-
+    kafka_rest = KafkaRest(kafka_conf)
     print('get trades by symbols {}'.format(symbols))
     for symbol in json.loads(symbols.replace("'","\"")):
         checkpoint = int(r.get(symbol)) if r.get(symbol) is not None else 0
-        data, checkpoint = binance_utils.get_trade(symbol.strip(), checkpoint)
-        r.set(symbol, checkpoint)
-
-
-
+        trades, checkpoint = binance_utils.get_trade(symbol.strip(), checkpoint)
+        if len(trades) > 0:
+            kafka_rest.produce('binance-trade', trades)
+            r.set(symbol, checkpoint)
 
 for i in range(WORKER+1):
     _task = PythonVirtualenvOperator(
