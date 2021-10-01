@@ -13,6 +13,7 @@ class KafkaRest:
         self.schemaregistry_user = config['schemaregistry_user']
         self.schemaregistry_pass = config['schemaregistry_pass']
         self.binance_trade_schema_id = int(config['binance_trade_schema_id'])
+        self.binance_trade_key_schema_id = int(config['binance_trade_key_schema_id'])
 
     def register_schema(self,  subject, schema):
         api_url = "{}/subjects/{}/versions".format(self.schemaregistry_host, subject)
@@ -58,11 +59,13 @@ class KafkaRest:
         schema = res.json()
         return schema.id
 
-    def _map_record(self, record):
-        record['time'] = str(record['time'])
-        return {"value": record}
+    def _map_record(self, symbol):
+        return lambda record: \
+            {'key': {'symbol': symbol}, \
+             'value': {**record, 'symbol': symbol, 'time': str(record['time']) } }
 
-    def produce(self,  topic, records):
+
+    def produce(self,  topic, key, records):
         api_url = "{}/topics/{}".format(self.host, topic)
         headers = {
             'Content-Type': 'application/vnd.kafka.avro.v2+json',
@@ -70,7 +73,8 @@ class KafkaRest:
         }
         data = {
             "value_schema_id": self.binance_trade_schema_id,
-            "records": list(map(self._map_record, records))
+            "key_schema_id": self.binance_trade_key_schema_id,
+            "records": list(map(self._map_record(key), records))
         }
         print("produce data {}".format(json.dumps(data)))
         res = requests.post(
