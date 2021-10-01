@@ -4,6 +4,7 @@ from airflow.operators.python import PythonVirtualenvOperator
 from airflow.utils.dates import days_ago
 import binance_utils
 import json
+from datetime import datetime, timedelta
 
 WORKER=5
 binance_api_price = '/api/v3/ticker/price'
@@ -14,10 +15,10 @@ args = {
 }
 
 dag = DAG(
-    dag_id='binance_trades_crawler',
+    dag_id='binance_trades_crawler_v10',
     default_args=args,
-    schedule_interval=None,
-    start_date=days_ago(2),
+    schedule_interval=timedelta(minutes=5),
+    start_date=datetime.utcnow() - timedelta(minutes=5),
     tags=['datapipeline', 'binance', 'trades']
 )
 
@@ -42,11 +43,13 @@ def get_binance_trades(**kwargs):
         'schemaregistry_user': Variable.get('kafka_schemaregistry_user'),
         'schemaregistry_pass': Variable.get('kafka_schemaregistry_pass'),
         'binance_trade_schema_id': Variable.get('kafka_binance_trade_schema_id'),
+        'binance_trade_key_schema_id': Variable.get('kafka_binance_trade_key_schema_id'),
     }
 
     # separate schema module
     binance_trade_schema = {
         "type": "record",
+        "namespace": "io.hieu.crypto",
         "name": "binance_trade",
         "fields":
         [
@@ -55,7 +58,7 @@ def get_binance_trades(**kwargs):
                 "name": "id"
             },
             {
-                "type": "int",
+                "type": "string",
                 "name": "time"
             },
             {
@@ -77,6 +80,23 @@ def get_binance_trades(**kwargs):
             {
                 "type": "boolean",
                 "name": "isBestMatch"
+            },
+            {
+                "type": "string",
+                "name": "symbol"
+            }
+        ]
+    }
+
+    binance_trade_key_schema = {
+        "type": "record",
+        "namespace": "io.hieu.crypto",
+        "name": "binance_trade",
+        "fields":
+        [
+            {
+                "type": "string",
+                "name": "symbol"
             }
         ]
     }
@@ -95,7 +115,7 @@ def get_binance_trades(**kwargs):
         checkpoint = int(r.get(symbol)) if r.get(symbol) is not None else 0
         trades, checkpoint = binance_utils.get_trade(symbol.strip(), checkpoint)
         if len(trades) > 0:
-            kafka_rest.produce('binance-trade', trades)
+            kafka_rest.produce('binance-trade', symbol, trades)
             r.set(symbol, checkpoint)
 
 for i in range(WORKER+1):
